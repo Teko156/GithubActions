@@ -1,0 +1,63 @@
+name: Check Branch Name
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  check-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+
+      - name: Check branch name
+        run: |
+          import re
+          import os
+          import requests
+
+          def get_branch_name():
+              if os.getenv('GITHUB_EVENT_NAME') == 'pull_request':
+                  pr_number = os.getenv('GITHUB_REF').split('/')[-1]
+                  response = requests.get(f'https://api.github.com/repos/{os.getenv("GITHUB_REPOSITORY")}/pulls/{pr_number}',
+                                          headers={'Authorization': f'token {os.getenv("GITHUB_TOKEN")}'})
+                  response.raise_for_status()
+                  pr_data = response.json()
+                  return pr_data['head']['ref']
+              else:
+                  return os.getenv('GITHUB_REF').split('/')[-1]
+
+          branch_name = get_branch_name()
+          pattern = re.compile(r'^feature/\d+$')
+
+          if not pattern.match(branch_name):
+              message = f'Branch name "{branch_name}" does not match the pattern "feature/<number>".'
+              raise ValueError(message)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on PR
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { github, context } = require('@actions/github');
+            const { owner, repo } = context.repo;
+            const prNumber = context.issue.number;
+            const message = 'The branch name does not match the pattern "feature/<number>". Please correct the branch name.';
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
+              body: message
+            });
