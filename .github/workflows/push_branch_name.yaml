@@ -2,8 +2,11 @@ name: Check branch name
 
 on:
   push:
-    branches:
-      - '**'  # срабатывает на любые ветки
+    branches: # all branches except main develop c2c-develop
+      - '**' 
+      - '!main' 
+      - '!develop'
+      - '!c2c-develop'
 
 jobs:
   check_branch_name:
@@ -11,7 +14,7 @@ jobs:
     steps:
       - name: Проверка имени ветки
         run: |
-          if [[ "${GITHUB_REF##*/}" != feature/* or "${GITHUB_REF##*/}" != main ]]; then
+          if [[ "${GITHUB_REF##*/}" != feature/* ]]; then
             echo "Недопустимое имя ветки: ${GITHUB_REF##*/}"
             exit 1
           fi
