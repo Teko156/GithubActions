@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Проверка имени ветки
         run: |
-          if [[ "${GITHUB_REF##*/}" != feature/* ]]; then
+          if [[ "${GITHUB_REF##*/}" != feature/* or "${GITHUB_REF##*/}" != main ]]; then
             echo "Недопустимое имя ветки: ${GITHUB_REF##*/}"
             exit 1
           fi
